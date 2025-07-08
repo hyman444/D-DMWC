@@ -1,0 +1,87 @@
+__include__: [
+  '../deim_dfine/deim_hgnetv2_s_visdrone.yml',
+  '../base/deim.yml'
+]
+
+print_freq: 400
+# output_dir: deim_dfine_s_visdrone_exps/drconv_mlca_test
+output_dir: deim_dfine_s_visdrone_exps/drconv_mlca_waveupdown_cgfm_test
+
+
+DEIM:
+  backbone: HGNetv2_DilatedReparamConv
+  # encoder: HybridEncoder
+  encoder: HybridEncoder_CGFM
+  decoder: DFINETransformer
+
+HGNetv2_DilatedReparamConv:
+  name: 'B0'
+  return_idx: [1, 2, 3]
+  freeze_at: -1
+  freeze_norm: False
+  use_lab: True
+  pretrained: False
+  agg: MLCA
+
+
+HybridEncoder_CGFM:
+  in_channels: [256, 512, 1024]
+  feat_strides: [8, 16, 32]
+
+  # intra
+  hidden_dim: 256
+  use_encoder_idx: [2]
+  num_encoder_layers: 1
+  nhead: 8
+  dim_feedforward: 1024
+  dropout: 0.
+  enc_act: 'gelu'
+
+  # cross
+  expansion: 0.5
+  depth_mult: 0.34
+  act: 'silu'
+
+optimizer:
+  type: AdamW
+  params:
+    -
+      params: '^(?=.*backbone)(?!.*norm|bn).*$'
+      lr: 0.0002
+    -
+      params: '^(?=.*backbone)(?=.*norm|bn).*$'
+      lr: 0.0001
+      weight_decay: 0.
+    -
+      params: '^(?=.*(?:encoder|decoder))(?=.*(?:norm|bn|bias)).*$'
+      weight_decay: 0.
+
+  lr: 0.0004
+  betas: [0.9, 0.999]
+  weight_decay: 0.0001
+
+# Increase to search for the optimal ema
+epoches: 132 # 120 + 4n
+
+## Our LR-Scheduler
+flat_epoch: 64    # 4 + epoch // 2, e.g., 40 = 4 + 72 / 2
+no_aug_epoch: 12
+
+## Our DataAug
+train_dataloader: 
+  dataset: 
+    transforms:
+      policy:
+        epoch: [4, 64, 120]   # list 
+  total_batch_size: 4
+  num_workers: 8
+  pin_memory: True
+  collate_fn:
+    mixup_epochs: [4, 64]
+    stop_epoch: 120
+
+val_dataloader:
+  total_batch_size: 8
+  num_workers: 8
+  pin_memory: True
+

@@ -1,0 +1,104 @@
+__include__: [
+  '../deim_dfine/deim_hgnetv2_l_visdrone.yml',
+  '../base/deim.yml'
+]
+
+print_freq: 850
+checkpoint_freq: 50
+output_dir: ./deim_dfine_l_visdrone_exps/DRConv_mlca_waveupdown_cgfm_lr0004back0004epoch70
+
+DEIM:
+  backbone: HGNetv2_DilatedReparamConv
+  encoder: HybridEncoder_CGFM
+  decoder: DFINETransformer
+
+HGNetv2_DilatedReparamConv:
+  name: 'B4'
+  return_idx: [1, 2, 3]
+  freeze_stem_only: false
+  freeze_at: -1
+  freeze_norm: True
+  use_lab: True
+  pretrained: False
+  agg: MLCA
+
+
+HybridEncoder_CGFM:
+  in_channels: [512, 1024, 2048]
+  feat_strides: [8, 16, 32]
+    # intra
+  hidden_dim: 256
+  use_encoder_idx: [2]
+  dim_feedforward: 1024
+  num_encoder_layers: 1
+  nhead: 8
+  dropout: 0.
+  enc_act: gelu
+  act: silu
+  # cross
+  expansion: 1.0
+  depth_mult: 1
+
+optimizer:
+  type: AdamW
+  params:
+    -
+      params: '^(?=.*backbone)(?!.*norm|bn).*$'
+      lr: 0.0004
+    # -
+    #   params: '^(?=.*backbone)(?=.*norm|bn).*$'
+    #   lr: 0.00025
+    #   weight_decay: 0.
+    -
+      params: '^(?=.*(?:encoder|decoder))(?=.*(?:norm|bn)).*$'
+      weight_decay: 0.
+
+  lr: 0.0004
+  betas: [0.9, 0.999]
+  weight_decay: 0.000125
+
+# Increase to search for the optimal ema
+epoches: 70 # 72 + 2n
+
+## Our LR-Scheduler
+flat_epoch: 39    # 4 + epoch // 2, e.g., 40 = 4 + 72 / 2
+no_aug_epoch: 10
+
+train_dataloader: 
+  dataset: 
+    transforms:
+      policy:
+        epoch: [4, 39, 60]   # list 
+
+  collate_fn:
+    mixup_epochs: [4, 39]
+    stop_epoch: 60
+  total_batch_size: 4
+  num_workers: 8
+  
+val_dataloader:
+  total_batch_size: 16
+  num_workers: 8
+# # Increase to search for the optimal ema
+# epoches: 58 # 72 + 2n
+
+# ## Our LR-Scheduler
+# flat_epoch: 29    # 4 + epoch // 2, e.g., 40 = 4 + 72 / 2
+# no_aug_epoch: 8
+
+# train_dataloader: 
+#   dataset: 
+#     transforms:
+#       policy:
+#         epoch: [4, 29, 50]   # list 
+
+#   collate_fn:
+#     mixup_epochs: [4, 29]
+#     stop_epoch: 50
+#   total_batch_size: 4
+#   num_workers: 8
+
+# val_dataloader:
+#   total_batch_size: 8
+#   num_workers: 8
+

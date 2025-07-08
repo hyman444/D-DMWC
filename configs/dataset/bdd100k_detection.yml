@@ -1,0 +1,68 @@
+task: detection
+
+evaluator:
+  type: CocoEvaluator
+  iou_types: ['bbox', ]
+
+num_classes: 10 # your dataset classes
+remap_mscoco_category: False
+
+train_dataloader:
+  type: DataLoader
+  dataset:
+    type: CocoDetection
+    # img_folder: /home/waas/DEIM/dataset/train/images
+    # ann_file: /home/waas/DEIM/dataset/train/annotations/data.json
+    # img_folder: /home/hjj/Desktop/project/DEIM/dataset/train/images
+    # ann_file: /home/hjj/Desktop/project/DEIM/dataset/train/annotations/data.json
+    img_folder: bdd100k/images/100k/train
+    ann_file: bdd100k/labels/cocotype/train_labels_10class.json
+    return_masks: False
+    transforms:
+      type: Compose
+      ops: ~
+  shuffle: True
+  num_workers: 8
+  drop_last: True
+  pin_memory: True
+  collate_fn:
+    type: BatchImageCollateFunction
+
+
+val_dataloader:
+  type: DataLoader
+  dataset:
+    type: CocoDetection
+    # img_folder: /home/waas/DEIM/dataset/val/images
+    # ann_file: /home/waas/DEIM/dataset/val/annotations/data.json
+    # img_folder: /home/hjj/Desktop/project/DEIM/dataset/val/images
+    # ann_file: /home/hjj/Desktop/project/DEIM/dataset/val/annotations/data.json
+    img_folder: bdd100k/images/100k/val
+    ann_file: bdd100k/labels/cocotype/val_labels_10class.json
+    return_masks: False
+    transforms:
+      type: Compose
+      ops: ~
+  shuffle: False
+  num_workers: 8
+  drop_last: False
+  pin_memory: True
+  collate_fn:
+    type: BatchImageCollateFunction
+
+# val_dataloader:
+#   type: DataLoader
+#   dataset:
+#     type: CocoDetection
+#     img_folder: /root/code/project/DEIM/dataset/test/images
+#     ann_file: /root/code/project/DEIM/dataset/test/annotations/data.json
+#     return_masks: False
+#     transforms:
+#       type: Compose
+#       ops: ~
+#   shuffle: False
+#   num_workers: 4
+#   drop_last: False
+#   pin_memory: True
+#   collate_fn:
+#     type: BatchImageCollateFunction
